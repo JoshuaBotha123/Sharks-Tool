@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sharks 2026/27 Season Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230b0b0d'/%3E%3Cpath d='M10 65 Q40 15 60 35 Q75 50 90 45 Q75 65 55 55 Q40 75 10 65Z' fill='%23e4032e'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --black:#0b0b0d;
+    --black-2:#151518;
+    --surface:#1c1c20;
+    --surface-2:#26262b;
+    --surface-3:#303036;
+    --red:#e4032e;
+    --red-dark:#a80224;
+    --red-glow:rgba(228,3,46,.35);
+    --white:#f5f5f7;
+    --muted:#9c9ca4;
+    --muted-2:#6c6c74;
+    --win:#2fbf71;
+    --loss:#e4032e;
+    --draw:#c9a227;
+    --border:#333338;
+    --radius:14px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--black);color:var(--white);}
+  body{padding-bottom:60px;}
+  a{color:var(--red);}
+  ::-webkit-scrollbar{height:8px;width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:8px;}
+
+  /* ---------- Header ---------- */
+  header.top{
+    background:linear-gradient(135deg,var(--black) 0%, var(--black-2) 60%, #1a0508 100%);
+    border-bottom:3px solid var(--red);
+    padding:22px 24px 16px;
+    position:sticky; top:0; z-index:50;
+    box-shadow:0 4px 20px rgba(0,0,0,.5);
+  }
+  .brand{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between;}
+  .brand-left{display:flex;align-items:center;gap:14px;}
+  .fin{width:46px;height:46px;flex:none;}
+  .brand h1{margin:0;font-size:1.5rem;letter-spacing:.5px;font-weight:800;text-transform:uppercase;}
+  .brand h1 span{color:var(--red);}
+  .brand .tag{margin:2px 0 0;color:var(--muted);font-size:.82rem;}
+  .brand-right{display:flex;gap:10px;flex-wrap:wrap;}
+  .pill{
+    background:var(--surface);border:1px solid var(--border);border-radius:999px;
+    padding:6px 14px;font-size:.78rem;color:var(--muted);white-space:nowrap;
+  }
+  .pill b{color:var(--white);}
+
+  nav.tabs{
+    display:flex;gap:4px;margin-top:18px;overflow-x:auto;padding-bottom:2px;
+  }
+  nav.tabs button{
+    background:none;border:none;color:var(--muted);font-size:.92rem;font-weight:600;
+    padding:10px 16px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;
+    transition:.15s;
+  }
+  nav.tabs button:hover{color:var(--white);}
+  nav.tabs button.active{color:var(--white);border-bottom-color:var(--red);}
+
+  main{max-width:1180px;margin:0 auto;padding:26px 20px 10px;}
+  section.view{display:none;animation:fade .25s ease;}
+  section.view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  h2.section-title{font-size:1.05rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:28px 0 14px;font-weight:700;}
+  h2.section-title:first-child{margin-top:0;}
+  h2.section-title .accent{color:var(--red);}
+
+  /* ---------- Cards / grid ---------- */
+  .grid{display:grid;gap:14px;}
+  .grid.kpi{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
+  .grid.two{grid-template-columns:1fr 1fr;}
+  .grid.comps{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));}
+  @media (max-width:760px){.grid.two{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px;
+  }
+  .card h3{margin:0 0 4px;font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;}
+  .kpi .card{text-align:center;}
+  .kpi .num{font-size:1.9rem;font-weight:800;margin:4px 0 2px;}
+  .kpi .sub{font-size:.75rem;color:var(--muted-2);}
+  .kpi .num.pos{color:var(--win);}
+  .kpi .num.neg{color:var(--red);}
+
+  .trophy-meter{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;position:relative;overflow:hidden;
+  }
+  .trophy-meter::before{
+    content:"";position:absolute;inset:0;background:radial-gradient(circle at top right, var(--red-glow), transparent 60%);
+    pointer-events:none;
+  }
+  .trophy-meter h3{font-size:.95rem;color:var(--white);text-transform:none;letter-spacing:0;margin-bottom:14px;font-weight:700;}
+  .meter-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .meter-label{width:130px;font-size:.8rem;color:var(--muted);flex:none;}
+  .meter-track{flex:1;height:10px;background:var(--surface-3);border-radius:8px;overflow:hidden;}
+  .meter-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--red-dark),var(--red));transition:width .4s ease;}
+  .meter-fill.gold{background:linear-gradient(90deg,#7a5c14,var(--draw));}
+  .meter-val{width:52px;text-align:right;font-weight:800;font-size:.88rem;flex:none;}
+
+  /* ---------- Fixtures ---------- */
+  .fixture-group{margin-bottom:26px;}
+  .fixture-row{
+    display:grid;grid-template-columns:100px 1fr 190px 90px;gap:14px;align-items:center;
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:12px 16px;margin-bottom:8px;
+  }
+  .fixture-row.played{border-left:3px solid var(--muted-2);}
+  .fixture-row.win{border-left:3px solid var(--win);}
+  .fixture-row.loss{border-left:3px solid var(--red);}
+  .fixture-row.draw{border-left:3px solid var(--draw);}
+  @media (max-width:700px){
+    .fixture-row{grid-template-columns:1fr;grid-template-areas:"date" "opp" "score" "prob";text-align:left;}
+  }
+  .fx-date{font-size:.78rem;color:var(--muted);line-height:1.3;}
+  .fx-date b{display:block;color:var(--white);font-size:.86rem;}
+  .fx-opp{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .venue-badge{
+    font-size:.68rem;font-weight:800;padding:2px 7px;border-radius:5px;
+    background:var(--surface-3);color:var(--muted);letter-spacing:.5px;
+  }
+  .venue-badge.home{background:rgba(47,191,113,.15);color:var(--win);}
+  .venue-badge.away{background:rgba(228,3,46,.15);color:var(--red);}
+  .opp-name{font-weight:700;font-size:.95rem;}
+  .opp-venue-text{font-size:.72rem;color:var(--muted-2);width:100%;}
+  .score-box{display:flex;align-items:center;gap:6px;justify-content:flex-end;}
+  .score-box input{
+    width:44px;text-align:center;background:var(--surface-3);border:1px solid var(--border);
+    color:var(--white);border-radius:6px;padding:6px 2px;font-size:.9rem;font-weight:700;
+  }
+  .score-box input:focus{outline:2px solid var(--red);}
+  .score-final{font-size:1.15rem;font-weight:800;letter-spacing:1px;}
+  .score-final .w{color:var(--win);}
+  .score-final .l{color:var(--red);}
+  .btn{
+    background:var(--red);color:#fff;border:none;border-radius:7px;padding:7px 12px;
+    font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  .btn:hover{background:var(--red-dark);}
+  .btn.secondary{background:var(--surface-3);color:var(--white);}
+  .btn.secondary:hover{background:#3a3a42;}
+  .btn.small{padding:5px 9px;font-size:.7rem;}
+  .prob-mini{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+  .prob-bar{width:100%;height:6px;border-radius:4px;background:var(--surface-3);overflow:hidden;display:flex;}
+  .prob-bar .w{background:var(--win);}
+  .prob-bar .d{background:var(--draw);}
+  .prob-bar .l{background:var(--red);}
+  .prob-text{font-size:.72rem;color:var(--muted);}
+  .prob-text b{color:var(--win);}
+  .comp-tag{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:5px;}
+  .comp-tag.preseason{background:var(--surface-3);color:var(--muted);}
+  .comp-tag.urc{background:rgba(228,3,46,.18);color:var(--red);}
+  .comp-tag.challenge{background:rgba(201,162,39,.18);color:var(--draw);}
+
+  /* ---------- Predictions list ---------- */
+  .pred-row{
+    display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:12px 16px;margin-bottom:8px;flex-wrap:wrap;
+  }
+  .pred-opp{width:170px;font-weight:700;flex:none;}
+  .pred-date{width:110px;color:var(--muted);font-size:.76rem;flex:none;}
+  .pred-bar-wrap{flex:1;min-width:180px;}
+  .pred-nums{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:4px;}
+  .pred-nums b{color:var(--white);}
+
+  /* ---------- Stats hub ---------- */
+  .table-wrap{overflow-x:auto;}
+  table.stat-table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:12px;overflow:hidden;}
+  table.stat-table th, table.stat-table td{padding:10px 14px;text-align:left;font-size:.85rem;border-bottom:1px solid var(--border);}
+  table.stat-table th{color:var(--muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.5px;}
+  table.stat-table tr:last-child td{border-bottom:none;}
+  table.stat-table td.num{text-align:right;font-weight:700;}
+
+  .bar-chart{display:flex;flex-direction:column;gap:10px;}
+  .bar-chart .row{display:grid;grid-template-columns:90px 1fr 60px;align-items:center;gap:10px;}
+  .bar-chart .row .lab{font-size:.78rem;color:var(--muted);}
+  .bar-chart .track{height:14px;background:var(--surface-3);border-radius:7px;position:relative;overflow:hidden;}
+  .bar-chart .fillbar{height:100%;border-radius:7px;}
+  .bar-chart .val{font-size:.78rem;font-weight:700;text-align:right;}
+  .legend{display:flex;gap:16px;margin-bottom:10px;font-size:.75rem;color:var(--muted);}
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+  .trophy-cabinet{display:flex;flex-wrap:wrap;gap:8px;}
+  .trophy-chip{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+    padding:8px 12px;font-size:.78rem;display:flex;gap:8px;align-items:center;
+  }
+  .trophy-chip b{color:var(--draw);}
+
+  .form-strip{display:flex;gap:6px;}
+  .form-chip{
+    width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:.7rem;font-weight:800;color:#fff;
+  }
+  .form-chip.w{background:var(--win);}
+  .form-chip.l{background:var(--red);}
+  .form-chip.d{background:var(--draw);color:#332800;}
+
+  /* ---------- Settings ---------- */
+  .settings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+  .rating-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;gap:8px;}
+  .rating-row span{font-size:.82rem;}
+  .rating-row input{width:70px;background:var(--surface-3);border:1px solid var(--border);color:var(--white);border-radius:6px;padding:5px;text-align:center;}
+  .config-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;}
+  .config-row label{font-size:.86rem;color:var(--muted);}
+  .config-row input[type=range]{flex:1;margin:0 12px;}
+  .config-row .valtag{width:50px;text-align:right;font-weight:700;}
+  .note{font-size:.78rem;color:var(--muted-2);line-height:1.5;margin-top:6px;}
+  .actions-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+
+  footer.foot{max-width:1180px;margin:30px auto 0;padding:20px;color:var(--muted-2);font-size:.75rem;text-align:center;border-top:1px solid var(--border);}
+  .info-tip{font-size:.75rem;color:var(--muted-2);background:var(--surface-2);border:1px dashed var(--border);border-radius:10px;padding:10px 14px;margin-bottom:16px;line-height:1.5;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="brand-left">
+      <svg class="fin" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#0b0b0d"/><path d="M10 65 Q40 15 60 35 Q75 50 90 45 Q75 65 55 55 Q40 75 10 65Z" fill="#e4032e"/></svg>
+      <div>
+        <h1>SHARK<span>S</span> DASHBOARD</h1>
+        <p class="tag">2026/27 Season &middot; URC &amp; EPCR Challenge Cup tracker &amp; predictor</p>
+      </div>
+    </div>
+    <div class="brand-right" id="headerPills"></div>
+  </div>
+  <nav class="tabs">
+    <button data-view="overview" class="active">Overview</button>
+    <button data-view="fixtures">Fixtures</button>
+    <button data-view="predictions">Predictions</button>
+    <button data-view="stats">Stats Hub</button>
+    <button data-view="settings">Settings</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- OVERVIEW -->
+  <section class="view active" id="view-overview">
+    <div class="info-tip">Enter final scores in the <b>Fixtures</b> tab as games are played &mdash; every number here (record, points, trophy odds) updates instantly and is saved in this browser.</div>
+    <h2 class="section-title">Season at a <span class="accent">Glance</span></h2>
+    <div class="grid kpi" id="overviewKpis"></div>
+
+    <h2 class="section-title">Title <span class="accent">Odds</span></h2>
+    <div class="grid two">
+      <div class="trophy-meter">
+        <h3>United Rugby Championship</h3>
+        <div id="urcMeters"></div>
+      </div>
+      <div class="trophy-meter">
+        <h3>EPCR Challenge Cup</h3>
+        <div id="challengeMeters"></div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Next Up</h2>
+    <div id="nextFixtures"></div>
+  </section>
+
+  <!-- FIXTURES -->
+  <section class="view" id="view-fixtures">
+    <div class="info-tip">Pre-season results are pre-loaded. For every other match, type the final score and hit <b>Save</b> &mdash; ratings, stats and predictions all recalculate off real results as the season goes on.</div>
+    <div id="fixturesContainer"></div>
+  </section>
+
+  <!-- PREDICTIONS -->
+  <section class="view" id="view-predictions">
+    <h2 class="section-title">Competition <span class="accent">Outlook</span></h2>
+    <div class="grid two">
+      <div class="trophy-meter">
+        <h3>United Rugby Championship</h3>
+        <div id="urcMeters2"></div>
+      </div>
+      <div class="trophy-meter">
+        <h3>EPCR Challenge Cup</h3>
+        <div id="challengeMeters2"></div>
+      </div>
+    </div>
+    <p class="note" style="margin:6px 0 20px;">Simulated 4,000 times per update using live Elo-style team ratings, home advantage and current standings. URC assumes the top 8 make the knockouts; Challenge Cup assumes the pool's top 2 go straight through, 3rd/4th get a playoff route. Purely for fun &mdash; not an official model.</p>
+
+    <h2 class="section-title">Game-by-Game <span class="accent">Win Probability</span></h2>
+    <div id="predictionRows"></div>
+  </section>
+
+  <!-- STATS HUB -->
+  <section class="view" id="view-stats">
+    <h2 class="section-title">Overall <span class="accent">Record</span></h2>
+    <div class="grid kpi" id="statsKpis"></div>
+
+    <h2 class="section-title">Points <span class="accent">For vs Against</span></h2>
+    <div class="card">
+      <div class="legend"><span><i style="background:#e4032e"></i>Points scored</span><span><i style="background:#6c6c74"></i>Points conceded</span></div>
+      <div class="bar-chart" id="pointsChart"></div>
+    </div>
+
+    <h2 class="section-title">By <span class="accent">Competition</span></h2>
+    <div class="table-wrap">
+      <table class="stat-table" id="compTable"></table>
+    </div>
+
+    <h2 class="section-title">Form &amp; <span class="accent">Extremes</span></h2>
+    <div class="grid two">
+      <div class="card">
+        <h3>Last 5 results</h3>
+        <div class="form-strip" id="formStrip" style="margin-top:10px;"></div>
+      </div>
+      <div class="card" id="extremesCard"></div>
+    </div>
+
+    <h2 class="section-title">Trophy <span class="accent">Cabinet</span></h2>
+    <div class="card">
+      <p style="margin:0 0 10px;font-size:.85rem;color:var(--muted);">All-time major honours (historical record, not affected by this season's results).</p>
+      <div class="trophy-cabinet" id="trophyCabinet"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <h2 class="section-title">Prediction <span class="accent">Model</span></h2>
+    <div class="card">
+      <div class="config-row">
+        <label>Home advantage (Elo pts)</label>
+        <input type="range" id="cfgHome" min="0" max="120" step="5">
+        <span class="valtag" id="cfgHomeVal"></span>
+      </div>
+      <div class="config-row">
+        <label>Rating volatility (K-factor)</label>
+        <input type="range" id="cfgK" min="5" max="50" step="1">
+        <span class="valtag" id="cfgKVal"></span>
+      </div>
+      <div class="config-row">
+        <label>Draw chance per match</label>
+        <input type="range" id="cfgDraw" min="0" max="10" step="1">
+        <span class="valtag" id="cfgDrawVal"></span>
+      </div>
+      <div class="config-row">
+        <label>Bonus-point chance</label>
+        <input type="range" id="cfgBonus" min="0" max="40" step="5">
+        <span class="valtag" id="cfgBonusVal"></span>
+      </div>
+      <p class="note">Ratings start from final 2025/26 URC standings (log points &amp; points difference) and move automatically as this season's results come in. Tweak them below if you disagree with a team's current form.</p>
+    </div>
+
+    <h2 class="section-title">Team <span class="accent">Strength Ratings</span></h2>
+    <div class="card">
+      <div class="settings-grid" id="ratingsGrid"></div>
+    </div>
+
+    <h2 class="section-title">Data</h2>
+    <div class="card">
+      <p class="note">Everything you enter is saved to this browser only (localStorage) &mdash; nothing is sent anywhere. Use export/import to move your season data between devices or back it up before clearing your browser.</p>
+      <div class="actions-row">
+        <button class="btn secondary" id="btnExport">Export data (.json)</button>
+        <button class="btn secondary" id="btnImportTrigger">Import data</button>
+        <input type="file" id="btnImportFile" accept="application/json" style="display:none;">
+        <button class="btn" id="btnReset">Reset everything to defaults</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  Built for fun &middot; fixtures &amp; last-season standings researched Sep 2026 &middot; not affiliated with the Sharks, SA Rugby, URC or EPCR &middot; edit the source to fix anything that changes.
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   DATA
+   ========================================================= */
+
+// Elo-style strength ratings. Seeded from the final 2025/26 URC
+// table (log points + points difference translated into a 1500-based
+// scale) plus a rough estimate for the Challenge Cup / pre-season
+// opponents that don't play in the URC. All fully editable in Settings.
+const DEFAULT_RATINGS = {
+  "Sharks": 1680,
+  "Glasgow Warriors": 1775,
+  "Leinster": 1765,
+  "Stormers": 1750,
+  "Bulls": 1745,
+  "Munster": 1725,
+  "Cardiff": 1725,
+  "Lions": 1720,
+  "Connacht": 1720,
+  "Ulster": 1710,
+  "Ospreys": 1645,
+  "Edinburgh": 1640,
+  "Benetton": 1615,
+  "Scarlets": 1590,
+  "Dragons": 1590,
+  "Zebre": 1525,
+  "Lyon": 1680,
+  "Castres": 1650,
+  "Newcastle Red Bulls": 1600,
+  "Leopards": 1400
+};
+
+// The other 15 URC teams (used to project a whole table for the
+// title-race simulation). Sharks are added separately in the sim.
+const URC_TEAMS = ["Glasgow Warriors","Leinster","Stormers","Bulls","Munster","Cardiff","Lions",
+  "Connacht","Ulster","Ospreys","Edinburgh","Benetton","Scarlets","Dragons","Zebre"];
+
+// Sharks' Challenge Cup pool (Pool 2), used for pool-ranking simulation.
+const CHALLENGE_POOL = ["Benetton","Lyon","Newcastle Red Bulls","Castres","Scarlets"];
+
+const DEFAULT_CONFIG = { home: 55, k: 24, draw: 3, bonus: 15 };
+
+// id, comp (preseason/urc/challenge), round label, date (ISO), opponent,
+// venue H/A, venue text, and (if already played) sf/sa = Sharks score / opponent score.
+const DEFAULT_FIXTURES = [
+  { id:"pre1", comp:"preseason", round:"Warm-up", date:"2026-08-30", opponent:"Leopards", venue:"H", venueText:"Hollywoodbets Kings Park, Durban", sf:66, sa:0 },
+  { id:"pre2", comp:"preseason", round:"Warm-up", date:"2026-09-06", opponent:"Lions", venue:"A", venueText:"Ellis Park, Johannesburg", sf:33, sa:31 },
+
+  { id:"urc1", comp:"urc", round:"Round 1", date:"2026-09-26", opponent:"Ospreys", venue:"H", venueText:"Hollywoodbets Kings Park, Durban" },
+  { id:"urc2", comp:"urc", round:"Round 2", date:"2026-10-03", opponent:"Leinster", venue:"H", venueText:"Hollywoodbets Kings Park, Durban" },
+  { id:"urc3", comp:"urc", round:"Round 3", date:"2026-10-10", opponent:"Stormers", venue:"A", venueText:"DHL Stadium, Cape Town" },
+  { id:"urc4", comp:"urc", round:"Round 4", date:"2026-10-23", opponent:"Cardiff", venue:"A", venueText:"Cardiff Arms Park" },
+  { id:"urc5", comp:"urc", round:"Round 5", date:"2026-10-31", opponent:"Munster", venue:"A", venueText:"Thomond Park, Limerick" },
+  { id:"urc6", comp:"urc", round:"Round 6", date:"2026-12-05", opponent:"Stormers", venue:"H", venueText:"Hollywoodbets Kings Park, Durban" },
+  { id:"urc7", comp:"urc", round:"Round 7", date:"2026-12-19", opponent:"Bulls", venue:"H", venueText:"Hollywoodbets Kings Park, Durban" },
+  { id:"urc8", comp:"urc", round:"Round 8", date:"2027-01-02", opponent:"Lions", venue:"H", venueText:"Hollywoodbets Kings Park, Durban" },
+  { id:"urc9", comp:"urc", round:"Round 9", date:"2027-01-22", opponent:"Ulster", venue:"A", venueText:"Affidea Stadium, Belfast" },
+  { id:"urc10", comp:"urc", round:"Round 10", date:"2027-01-30", opponent:"Benetton", venue:"A", venueText:"Stadio Monigo, Treviso" },
+  { id:"urc11", comp:"urc", round:"Round 11", date:"2027-02-20", opponent:"Lions", venue:"A", venueText:"Ellis Park, Johannesburg" },
+  { id:"urc12", comp:"urc", round:"Round 12", date:"2027-02-27", opponent:"Bulls", venue:"A", venueText:"Loftus Versfeld, Pretoria" },
+  { id:"urc13", comp:"urc", round:"Round 13", date:"2027-03-19", opponent:"Edinburgh", venue:"H", venueText:"Hollywoodbets Kings Park, Durban" },
+  { id:"urc14", comp:"urc", round:"Round 14", date:"2027-03-27", opponent:"Dragons", venue:"H", venueText:"Hollywoodbets Kings Park, Durban" },
+  { id:"urc15", comp:"urc", round:"Round 15", date:"2027-04-17", opponent:"Zebre", venue:"A", venueText:"Stadio Sergio Lanfranchi, Parma" },
+  { id:"urc16", comp:"urc", round:"Round 16", date:"2027-04-24", opponent:"Scarlets", venue:"A", venueText:"Parc y Scarlets, Llanelli" },
+  { id:"urc17", comp:"urc", round:"Round 17", date:"2027-05-08", opponent:"Connacht", venue:"H", venueText:"Hollywoodbets Kings Park, Durban" },
+  { id:"urc18", comp:"urc", round:"Round 18", date:"2027-05-15", opponent:"Glasgow Warriors", venue:"H", venueText:"Hollywoodbets Kings Park, Durban" },
+
+  { id:"cc1", comp:"challenge", round:"Pool - Rd 1", date:"2026-10-17", opponent:"Lyon", venue:"A", venueText:"Lyon, France" },
+  { id:"cc2", comp:"challenge", round:"Pool - Rd 2", date:"2026-12-12", opponent:"Scarlets", venue:"H", venueText:"Hollywoodbets Kings Park, Durban" },
+  { id:"cc3", comp:"challenge", round:"Pool - Rd 3", date:"2027-01-09", opponent:"Castres", venue:"H", venueText:"Hollywoodbets Kings Park, Durban" },
+  { id:"cc4", comp:"challenge", round:"Pool - Rd 4", date:"2027-01-16", opponent:"Benetton", venue:"A", venueText:"Stadio Monigo, Treviso" }
+];
+
+const TROPHIES = [
+  { name:"Currie Cup", count:9, detail:"1990, 1992, 1995, 1996, 2008, 2010, 2013, 2018, 2024" },
+  { name:"EPCR Challenge Cup", count:1, detail:"2023/24 (beat Gloucester in the final)" },
+  { name:"United Rugby Championship", count:0, detail:"Best: semi-final, 2024/25" },
+  { name:"Super Rugby", count:0, detail:"4x runner-up: 1996, 2001, 2007, 2012" }
+];
+
+const COMP_LABEL = { preseason:"Pre-season", urc:"URC", challenge:"Challenge Cup" };
+
+/* =========================================================
+   STATE (persisted to localStorage)
+   ========================================================= */
+const STORAGE_KEY = "sharksDashboardV2";
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      return {
+        ratings: Object.assign({}, DEFAULT_RATINGS, parsed.ratings || {}),
+        config: Object.assign({}, DEFAULT_CONFIG, parsed.config || {}),
+        fixtures: parsed.fixtures && parsed.fixtures.length ? parsed.fixtures : clone(DEFAULT_FIXTURES)
+      };
+    }
+  }catch(e){ /* ignore corrupt storage, fall through to defaults */ }
+  return { ratings:clone(DEFAULT_RATINGS), config:clone(DEFAULT_CONFIG), fixtures:clone(DEFAULT_FIXTURES) };
+}
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ /* storage unavailable - state stays in memory only */ }
+}
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+let state = loadState();
+
+/* =========================================================
+   ELO HELPERS
+   ========================================================= */
+function expected(a, b){ return 1/(1+Math.pow(10,(b-a)/400)); }
+
+// Replays every *played* fixture in date order from the base ratings,
+// so "current" strength always reflects real results entered so far.
+function currentRatings(){
+  const r = Object.assign({}, DEFAULT_RATINGS, state.ratings);
+  const cfg = state.config;
+  const played = state.fixtures.filter(f=>hasResult(f)).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  played.forEach(f=>{
+    if(r[f.opponent] === undefined) r[f.opponent] = 1500;
+    const sharksHome = f.venue === "H";
+    const effS = expected(r["Sharks"] + (sharksHome?cfg.home:0), r[f.opponent] + (sharksHome?0:cfg.home));
+    let result = 0.5;
+    if(f.sf > f.sa) result = 1; else if(f.sf < f.sa) result = 0;
+    const delta = cfg.k * (result - effS);
+    r["Sharks"] += delta;
+    r[f.opponent] -= delta;
+  });
+  return r;
+}
+
+function hasResult(f){ return f.sf !== undefined && f.sf !== null && f.sf !== "" && f.sa !== undefined && f.sa !== null && f.sa !== ""; }
+
+function winProb(fixture, ratings){
+  const cfg = state.config;
+  const opp = ratings[fixture.opponent] !== undefined ? ratings[fixture.opponent] : 1500;
+  const home = fixture.venue === "H";
+  const eff = expected(ratings["Sharks"] + (home?cfg.home:0), opp + (home?0:cfg.home));
+  const drawP = cfg.draw/100;
+  const win = eff*(1-drawP);
+  const loss = (1-eff)*(1-drawP);
+  return { win: win, draw: drawP, loss: loss };
+}
+
+/* =========================================================
+   SIMULATION (Monte Carlo, run on demand from computed state)
+   ========================================================= */
+function randn(){
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function logPointsFromResult(result, cfg){
+  let pts = result===1 ? 4 : (result===0.5 ? 2 : 0);
+  if(Math.random() < cfg.bonus/100) pts += 1;
+  return pts;
+}
+
+function currentCompPoints(comp, ratings){
+  // Actual log points accrued so far this season in a competition,
+  // approximating bonus points from the margin since try counts aren't tracked.
+  const cfg = state.config;
+  let pts = 0;
+  state.fixtures.filter(f=>f.comp===comp && hasResult(f)).forEach(f=>{
+    if(f.sf > f.sa) pts += 4; else if(f.sf === f.sa) pts += 2;
+    const margin = Math.abs(f.sf - f.sa);
+    if(f.sf > f.sa && (f.sf - f.sa) >= 15) pts += 1; // rough attacking-bonus proxy
+    if(f.sf < f.sa && margin <= 7) pts += 1; // rough losing-bonus proxy
+  });
+  return pts;
+}
+
+// Projects a plausible final log-points tally for a team we AREN'T simulating
+// game-by-game, calibrated against the league-average rating so the scale
+// always lines up with however Sharks' own (fully simulated) fixtures play out.
+function projectPoints(rating, avgRating, games){
+  const wr = expected(rating, avgRating);
+  const mean = games * (wr*4 + 0.3);
+  const sd = Math.sqrt(games) * 1.8;
+  return Math.max(0, mean + randn()*sd);
+}
+
+function runURCSimulation(trials){
+  const ratings = currentRatings();
+  const cfg = state.config;
+  const remaining = state.fixtures.filter(f=>f.comp==="urc" && !hasResult(f));
+  const basePts = currentCompPoints("urc", ratings);
+  const playedGames = state.fixtures.filter(f=>f.comp==="urc" && hasResult(f)).length;
+  const totalGames = state.fixtures.filter(f=>f.comp==="urc").length;
+  let top8=0, first=0, champ=0;
+
+  const leagueAvg = (URC_TEAMS.reduce((a,n)=>a+(ratings[n]!==undefined?ratings[n]:1500),0) + ratings["Sharks"]) / (URC_TEAMS.length+1);
+
+  for(let t=0;t<trials;t++){
+    let pts = basePts;
+    let rating = ratings["Sharks"];
+    remaining.forEach(f=>{
+      const oppR = ratings[f.opponent] !== undefined ? ratings[f.opponent] : 1500;
+      const home = f.venue === "H";
+      const eff = expected(rating + (home?cfg.home:0), oppR + (home?0:cfg.home));
+      const roll = Math.random();
+      const drawP = cfg.draw/100;
+      let result;
+      if(roll < drawP) result = 0.5;
+      else if(roll < drawP + eff*(1-drawP)) result = 1;
+      else result = 0;
+      pts += logPointsFromResult(result, cfg);
+      rating += cfg.k * (result - eff);
+    });
+
+    const others = URC_TEAMS.map(name=>{
+      const r = ratings[name] !== undefined ? ratings[name] : 1500;
+      return projectPoints(r, leagueAvg, totalGames);
+    });
+    const all = others.concat([pts]).sort((a,b)=>b-a);
+    const rank = all.lastIndexOf(pts) + 1;
+
+    if(rank===1) first++;
+    if(rank<=8){
+      top8++;
+      const roundOpp = [1650,1700,1735];
+      let curRating = rating, advanced = true;
+      for(let rd=0; rd<3 && advanced; rd++){
+        const home = rank<=4 && rd===0;
+        const e = expected(curRating + (home?cfg.home:0), roundOpp[rd]);
+        advanced = Math.random() < e;
+      }
+      if(advanced) champ++;
+    }
+  }
+  return { playoffs: top8/trials, topOfTable: first/trials, champion: champ/trials };
+}
+
+function runChallengeSimulation(trials){
+  const ratings = currentRatings();
+  const cfg = state.config;
+  const remaining = state.fixtures.filter(f=>f.comp==="challenge" && !hasResult(f));
+  const basePts = currentCompPoints("challenge", ratings);
+  const totalGames = state.fixtures.filter(f=>f.comp==="challenge").length;
+  let ko=0, champ=0;
+
+  const poolAvg = (CHALLENGE_POOL.reduce((a,n)=>a+(ratings[n]!==undefined?ratings[n]:1500),0) + ratings["Sharks"]) / (CHALLENGE_POOL.length+1);
+
+  for(let t=0;t<trials;t++){
+    let pts = basePts;
+    let rating = ratings["Sharks"];
+    remaining.forEach(f=>{
+      const oppR = ratings[f.opponent] !== undefined ? ratings[f.opponent] : 1500;
+      const home = f.venue === "H";
+      const eff = expected(rating + (home?cfg.home:0), oppR + (home?0:cfg.home));
+      const roll = Math.random();
+      const drawP = cfg.draw/100;
+      let result;
+      if(roll < drawP) result = 0.5;
+      else if(roll < drawP + eff*(1-drawP)) result = 1;
+      else result = 0;
+      pts += logPointsFromResult(result, cfg);
+      rating += cfg.k * (result - eff);
+    });
+
+    const others = CHALLENGE_POOL.map(name=>{
+      const r = ratings[name] !== undefined ? ratings[name] : 1500;
+      return projectPoints(r, poolAvg, totalGames);
+    });
+    const all = others.concat([pts]).sort((a,b)=>b-a);
+    const rank = all.lastIndexOf(pts) + 1;
+
+    let reached = false;
+    if(rank<=2) reached = true;
+    else if(rank<=4 && Math.random() < 0.5) reached = true;
+
+    if(reached){
+      ko++;
+      const rounds = rank<=2 ? [1650,1690,1725] : [1600,1650,1690,1725];
+      let curRating = rating, advanced = true;
+      for(let i=0;i<rounds.length && advanced;i++){
+        const e = expected(curRating, rounds[i]);
+        advanced = Math.random() < e;
+      }
+      if(advanced) champ++;
+    }
+  }
+  return { knockouts: ko/trials, champion: champ/trials };
+}
+
+/* =========================================================
+   STATS AGGREGATION
+   ========================================================= */
+function computeStats(){
+  const played = state.fixtures.filter(hasResult);
+  const s = {
+    played: played.length, w:0, d:0, l:0, pf:0, pa:0,
+    byComp:{}
+  };
+  ["preseason","urc","challenge"].forEach(c=>{ s.byComp[c] = {played:0,w:0,d:0,l:0,pf:0,pa:0}; });
+
+  let biggestWin = null, biggestLoss = null;
+  played.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(f=>{
+    const bucket = s.byComp[f.comp];
+    bucket.played++; s.pf += f.sf; s.pa += f.sa; bucket.pf += f.sf; bucket.pa += f.sa;
+    const margin = f.sf - f.sa;
+    if(f.sf > f.sa){ s.w++; bucket.w++; if(!biggestWin || margin > biggestWin.margin) biggestWin = {f, margin}; }
+    else if(f.sf < f.sa){ s.l++; bucket.l++; if(!biggestLoss || -margin > biggestLoss.margin) biggestLoss = {f, margin:-margin}; }
+    else { s.d++; bucket.d++; }
+  });
+  s.diff = s.pf - s.pa;
+  s.form = played.slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(-5).reverse().map(f=>{
+    if(f.sf>f.sa) return "w"; if(f.sf<f.sa) return "l"; return "d";
+  });
+  s.biggestWin = biggestWin; s.biggestLoss = biggestLoss;
+  return s;
+}
+
+/* =========================================================
+   RENDERING
+   ========================================================= */
+const els = {};
+document.querySelectorAll("[id]").forEach(e=>{ els[e.id] = e; });
+
+function fmtPct(x){ return Math.round(x*100) + "%"; }
+function fmtDate(iso){
+  const d = new Date(iso+"T12:00:00");
+  return d.toLocaleDateString("en-ZA", {weekday:"short", day:"numeric", month:"short", year:"numeric"});
+}
+function fmtDateShort(iso){
+  const d = new Date(iso+"T12:00:00");
+  return d.toLocaleDateString("en-ZA", {day:"numeric", month:"short"});
+}
+
+function renderAll(){
+  const ratings = currentRatings();
+  const stats = computeStats();
+  const urcSim = runURCSimulation(4000);
+  const ccSim = runChallengeSimulation(4000);
+
+  renderHeaderPills(stats);
+  renderOverview(stats, urcSim, ccSim, ratings);
+  renderFixtures(ratings);
+  renderPredictions(ratings, urcSim, ccSim);
+  renderStats(stats);
+  renderSettings();
+  saveState();
+}
+
+function renderHeaderPills(stats){
+  els.headerPills.innerHTML =
+    '<span class="pill">Record <b>' + stats.w + 'W ' + stats.d + 'D ' + stats.l + 'L</b></span>' +
+    '<span class="pill">Points diff <b class="' + (stats.diff>=0?'':'') + '">' + (stats.diff>=0?'+':'') + stats.diff + '</b></span>' +
+    '<span class="pill">Trophies <b>' + TROPHIES.reduce((a,t)=>a+t.count,0) + '</b></span>';
+}
+
+function meterHtml(rows){
+  return rows.map(r=>
+    '<div class="meter-row"><span class="meter-label">'+r.label+'</span>' +
+    '<div class="meter-track"><div class="meter-fill'+(r.gold?' gold':'')+'" style="width:'+Math.max(2,r.value*100)+'%"></div></div>' +
+    '<span class="meter-val">'+fmtPct(r.value)+'</span></div>'
+  ).join("");
+}
+
+function renderOverview(stats, urcSim, ccSim, ratings){
+  const kpis = [
+    { label:"Matches played", value: stats.played, sub: state.fixtures.length + " total this season" },
+    { label:"Points scored", value: stats.pf, sub:"avg " + (stats.played? (stats.pf/stats.played).toFixed(1):"0") + "/game" },
+    { label:"Points conceded", value: stats.pa, sub:"avg " + (stats.played? (stats.pa/stats.played).toFixed(1):"0") + "/game" },
+    { label:"Point difference", value:(stats.diff>=0?"+":"")+stats.diff, cls: stats.diff>=0?"pos":"neg" },
+    { label:"Current Elo rating", value: Math.round(ratings["Sharks"]), sub:"started at " + DEFAULT_RATINGS["Sharks"] }
+  ];
+  els.overviewKpis.innerHTML = kpis.map(k=>
+    '<div class="card"><h3>'+k.label+'</h3><div class="num '+(k.cls||'')+'">'+k.value+'</div>' + (k.sub?'<div class="sub">'+k.sub+'</div>':'') + '</div>'
+  ).join("");
+
+  const urcRows = [
+    {label:"Make playoffs (top 8)", value:urcSim.playoffs},
+    {label:"Finish top of table", value:urcSim.topOfTable},
+    {label:"Win the URC", value:urcSim.champion, gold:true}
+  ];
+  const ccRows = [
+    {label:"Reach knockouts", value:ccSim.knockouts},
+    {label:"Win the Challenge Cup", value:ccSim.champion, gold:true}
+  ];
+  els.urcMeters.innerHTML = meterHtml(urcRows);
+  els.challengeMeters.innerHTML = meterHtml(ccRows);
+  els.urcMeters2.innerHTML = meterHtml(urcRows);
+  els.challengeMeters2.innerHTML = meterHtml(ccRows);
+
+  const upcoming = state.fixtures.filter(f=>!hasResult(f)).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
+  els.nextFixtures.innerHTML = upcoming.length ? upcoming.map(f=>{
+    const p = winProb(f, ratings);
+    return fixtureRowHtml(f, p, false);
+  }).join("") : '<p class="note">No upcoming fixtures loaded &mdash; season complete!</p>';
+}
+
+function fixtureRowHtml(f, prob, editable){
+  const played = hasResult(f);
+  let cls = "fixture-row";
+  if(played){ cls += f.sf>f.sa ? " win" : (f.sf<f.sa ? " loss" : " draw"); }
+  const venueCls = f.venue==="H" ? "home" : "away";
+  const venueLabel = f.venue==="H" ? "HOME" : "AWAY";
+
+  let right;
+  if(played){
+    right = '<div class="score-box"><span class="score-final"><span class="'+(f.sf>f.sa?'w':(f.sf<f.sa?'l':''))+'">'+f.sf+'</span> - <span class="'+(f.sf<f.sa?'w':(f.sf>f.sa?'l':''))+'">'+f.sa+'</span></span></div>' +
+      (editable ? '<button class="btn small secondary" data-action="edit" data-id="'+f.id+'" style="margin-left:8px;">Edit</button>' : '');
+  } else if(editable){
+    right = '<div class="score-box">' +
+      '<input type="number" min="0" data-role="sf" data-id="'+f.id+'" placeholder="us" value="'+(f._draftSf!==undefined?f._draftSf:'')+'">' +
+      '<span style="color:var(--muted-2)">-</span>' +
+      '<input type="number" min="0" data-role="sa" data-id="'+f.id+'" placeholder="opp" value="'+(f._draftSa!==undefined?f._draftSa:'')+'">' +
+      '<button class="btn small" data-action="save" data-id="'+f.id+'">Save</button></div>';
+  } else {
+    right = '<div class="prob-mini"><div class="prob-bar" style="width:110px;"><div class="w" style="width:'+(prob.win*100)+'%"></div><div class="d" style="width:'+(prob.draw*100)+'%"></div><div class="l" style="width:'+(prob.loss*100)+'%"></div></div><span class="prob-text">Win <b>'+fmtPct(prob.win)+'</b></span></div>';
+  }
+
+  return '<div class="'+cls+'">' +
+    '<div class="fx-date"><span class="comp-tag '+f.comp+'">'+COMP_LABEL[f.comp]+'</span><b>'+fmtDateShort(f.date)+'</b>'+f.round+'</div>' +
+    '<div class="fx-opp"><span class="venue-badge '+venueCls+'">'+venueLabel+'</span><span class="opp-name">vs '+f.opponent+'</span><span class="opp-venue-text">'+f.venueText+'</span></div>' +
+    right +
+    '<div></div>' +
+    '</div>';
+}
+
+function renderFixtures(ratings){
+  const groups = ["preseason","urc","challenge"];
+  els.fixturesContainer.innerHTML = groups.map(g=>{
+    const list = state.fixtures.filter(f=>f.comp===g).sort((a,b)=>a.date.localeCompare(b.date));
+    if(!list.length) return "";
+    const rows = list.map(f=>{
+      const prob = hasResult(f) ? null : winProb(f, ratings);
+      return fixtureRowHtml(f, prob, true);
+    }).join("");
+    const titleMap = {preseason:"Pre-season Warm-ups", urc:"United Rugby Championship", challenge:"EPCR Challenge Cup"};
+    return '<div class="fixture-group"><h2 class="section-title">'+titleMap[g]+'</h2>'+rows+'</div>';
+  }).join("");
+}
+
+function renderPredictions(ratings, urcSim, ccSim){
+  const pending = state.fixtures.filter(f=>!hasResult(f)).sort((a,b)=>a.date.localeCompare(b.date));
+  els.predictionRows.innerHTML = pending.length ? pending.map(f=>{
+    const p = winProb(f, ratings);
+    return '<div class="pred-row">' +
+      '<span class="comp-tag '+f.comp+'">'+COMP_LABEL[f.comp]+'</span>' +
+      '<span class="pred-opp">'+(f.venue==='H'?'vs ':'@ ')+f.opponent+'</span>' +
+      '<span class="pred-date">'+fmtDateShort(f.date)+'</span>' +
+      '<div class="pred-bar-wrap"><div class="pred-nums"><span>Win <b>'+fmtPct(p.win)+'</b></span><span>Draw '+fmtPct(p.draw)+'</span><span>Loss '+fmtPct(p.loss)+'</span></div>' +
+      '<div class="prob-bar" style="height:10px;"><div class="w" style="width:'+(p.win*100)+'%"></div><div class="d" style="width:'+(p.draw*100)+'%"></div><div class="l" style="width:'+(p.loss*100)+'%"></div></div></div>' +
+      '</div>';
+  }).join("") : '<p class="note">All fixtures played &mdash; season\'s done!</p>';
+}
+
+function renderStats(stats){
+  const kpis = [
+    {label:"Wins", value:stats.w},
+    {label:"Draws", value:stats.d},
+    {label:"Losses", value:stats.l},
+    {label:"Win %", value: stats.played ? Math.round(stats.w/stats.played*100)+"%" : "-"},
+    {label:"Points scored", value:stats.pf},
+    {label:"Points conceded", value:stats.pa},
+    {label:"Point difference", value:(stats.diff>=0?"+":"")+stats.diff, cls: stats.diff>=0?"pos":"neg"},
+    {label:"Trophies (all-time)", value: TROPHIES.reduce((a,t)=>a+t.count,0)}
+  ];
+  els.statsKpis.innerHTML = kpis.map(k=>
+    '<div class="card"><h3>'+k.label+'</h3><div class="num '+(k.cls||'')+'">'+k.value+'</div></div>'
+  ).join("");
+
+  const maxVal = Math.max(stats.pf, stats.pa, 1);
+  els.pointsChart.innerHTML =
+    '<div class="row"><span class="lab">Scored</span><div class="track"><div class="fillbar" style="width:'+(stats.pf/maxVal*100)+'%;background:#e4032e;"></div></div><span class="val">'+stats.pf+'</span></div>' +
+    '<div class="row"><span class="lab">Conceded</span><div class="track"><div class="fillbar" style="width:'+(stats.pa/maxVal*100)+'%;background:#6c6c74;"></div></div><span class="val">'+stats.pa+'</span></div>';
+
+  const compRows = ["preseason","urc","challenge"].map(c=>{
+    const b = stats.byComp[c];
+    const diff = b.pf-b.pa;
+    return '<tr><td>'+COMP_LABEL[c]+'</td><td class="num">'+b.played+'</td><td class="num">'+b.w+'</td><td class="num">'+b.d+'</td><td class="num">'+b.l+'</td><td class="num">'+b.pf+'</td><td class="num">'+b.pa+'</td><td class="num">'+(diff>=0?'+':'')+diff+'</td></tr>';
+  }).join("");
+  els.compTable.innerHTML = '<thead><tr><th>Competition</th><th class="num">Pld</th><th class="num">W</th><th class="num">D</th><th class="num">L</th><th class="num">PF</th><th class="num">PA</th><th class="num">Diff</th></tr></thead><tbody>'+compRows+'</tbody>';
+
+  els.formStrip.innerHTML = stats.form.length ? stats.form.map(r=>'<div class="form-chip '+r+'">'+r.toUpperCase()+'</div>').join("") : '<p class="note">No results yet.</p>';
+
+  let extremes = "<h3>Biggest results</h3>";
+  extremes += stats.biggestWin ? '<p style="margin:6px 0;font-size:.85rem;">Biggest win: <b>'+stats.biggestWin.margin+'pt</b> vs '+stats.biggestWin.f.opponent+' ('+stats.biggestWin.f.sf+'-'+stats.biggestWin.f.sa+', '+fmtDate(stats.biggestWin.f.date)+')</p>' : '<p class="note">No wins recorded yet.</p>';
+  extremes += stats.biggestLoss ? '<p style="margin:6px 0;font-size:.85rem;">Heaviest loss: <b>'+stats.biggestLoss.margin+'pt</b> vs '+stats.biggestLoss.f.opponent+' ('+stats.biggestLoss.f.sf+'-'+stats.biggestLoss.f.sa+', '+fmtDate(stats.biggestLoss.f.date)+')</p>' : '<p class="note">No losses recorded yet.</p>';
+  els.extremesCard.innerHTML = extremes;
+
+  els.trophyCabinet.innerHTML = TROPHIES.map(t=>
+    '<div class="trophy-chip">🏆 <b>'+t.count+'x</b> '+t.name+'<span class="note" style="margin:0;">&mdash; '+t.detail+'</span></div>'
+  ).join("");
+}
+
+function renderSettings(){
+  const cfg = state.config;
+  els.cfgHome.value = cfg.home; els.cfgHomeVal.textContent = cfg.home;
+  els.cfgK.value = cfg.k; els.cfgKVal.textContent = cfg.k;
+  els.cfgDraw.value = cfg.draw; els.cfgDrawVal.textContent = cfg.draw+"%";
+  els.cfgBonus.value = cfg.bonus; els.cfgBonusVal.textContent = cfg.bonus+"%";
+
+  const names = Object.keys(DEFAULT_RATINGS).sort();
+  els.ratingsGrid.innerHTML = names.map(n=>
+    '<div class="rating-row"><span>'+n+'</span><input type="number" step="5" data-team="'+n+'" value="'+Math.round(state.ratings[n])+'"></div>'
+  ).join("");
+}
+
+/* =========================================================
+   EVENTS
+   ========================================================= */
+document.querySelectorAll("nav.tabs button").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll("section.view").forEach(s=>s.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("view-"+btn.dataset.view).classList.add("active");
+  });
+});
+
+document.addEventListener("input", (e)=>{
+  const t = e.target;
+  if(t.matches('input[data-role="sf"]')){
+    const f = state.fixtures.find(x=>x.id===t.dataset.id); if(f) f._draftSf = t.value;
+  }
+  if(t.matches('input[data-role="sa"]')){
+    const f = state.fixtures.find(x=>x.id===t.dataset.id); if(f) f._draftSa = t.value;
+  }
+  if(t.id==="cfgHome"){ state.config.home = +t.value; els.cfgHomeVal.textContent = t.value; renderAll(); }
+  if(t.id==="cfgK"){ state.config.k = +t.value; els.cfgKVal.textContent = t.value; renderAll(); }
+  if(t.id==="cfgDraw"){ state.config.draw = +t.value; els.cfgDrawVal.textContent = t.value+"%"; renderAll(); }
+  if(t.id==="cfgBonus"){ state.config.bonus = +t.value; els.cfgBonusVal.textContent = t.value+"%"; renderAll(); }
+  if(t.matches('input[data-team]')){ state.ratings[t.dataset.team] = +t.value; renderAll(); }
+});
+
+document.addEventListener("click", (e)=>{
+  const t = e.target;
+  if(t.matches('[data-action="save"]')){
+    const f = state.fixtures.find(x=>x.id===t.dataset.id);
+    if(!f) return;
+    const sf = Number(f._draftSf), sa = Number(f._draftSa);
+    if(f._draftSf==="" || f._draftSa==="" || isNaN(sf) || isNaN(sa)){
+      alert("Enter both scores before saving.");
+      return;
+    }
+    f.sf = sf; f.sa = sa;
+    delete f._draftSf; delete f._draftSa;
+    renderAll();
+  }
+  if(t.matches('[data-action="edit"]')){
+    const f = state.fixtures.find(x=>x.id===t.dataset.id);
+    if(!f) return;
+    f._draftSf = f.sf; f._draftSa = f.sa;
+    delete f.sf; delete f.sa;
+    renderAll();
+  }
+  if(t.id==="btnReset"){
+    if(confirm("Reset all fixtures, scores and ratings back to the defaults? This can't be undone.")){
+      state = { ratings:clone(DEFAULT_RATINGS), config:clone(DEFAULT_CONFIG), fixtures:clone(DEFAULT_FIXTURES) };
+      renderAll();
+    }
+  }
+  if(t.id==="btnExport"){
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "sharks-dashboard-data.json";
+    a.click();
+  }
+  if(t.id==="btnImportTrigger"){ els.btnImportFile.click(); }
+});
+
+els.btnImportFile.addEventListener("change", (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      state = {
+        ratings: Object.assign({}, DEFAULT_RATINGS, parsed.ratings||{}),
+        config: Object.assign({}, DEFAULT_CONFIG, parsed.config||{}),
+        fixtures: parsed.fixtures && parsed.fixtures.length ? parsed.fixtures : clone(DEFAULT_FIXTURES)
+      };
+      renderAll();
+    }catch(err){ alert("That file doesn't look like valid Sharks dashboard data."); }
+  };
+  reader.readAsText(file);
+});
+
+/* =========================================================
+   INIT
+   ========================================================= */
+renderAll();
+
+})();
+</script>
+</body>
+</html>
