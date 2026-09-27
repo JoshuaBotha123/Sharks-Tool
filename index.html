@@ -51,6 +51,8 @@
   .brandrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between;}
   .brand-left{display:flex;align-items:center;gap:12px;}
   .crest{width:44px;height:44px;flex:none;}
+  .crest-wrap{width:48px;height:48px;flex:none;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+  .crest-wrap img.crest{width:100%;height:100%;object-fit:contain;}
   .brand h1{margin:0;font-size:1.7rem;letter-spacing:.5px;font-weight:800;text-transform:uppercase;line-height:1;}
   .brand h1 span{color:var(--gold);}
   .brand .tag{margin:2px 0 0;color:var(--muted);font-size:.8rem;font-family:'Inter',sans-serif;}
@@ -121,6 +123,11 @@
   .fixture-row.loss{border-left:3px solid var(--loss);}
   .fixture-row.draw{border-left:3px solid var(--draw);}
   @media (max-width:700px){.fixture-row{grid-template-columns:1fr;text-align:left;}}
+  .bonus-row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);font-size:.72rem;color:var(--muted);}
+  .bonus-row .bonus-label{color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;font-size:.64rem;}
+  .bonus-row label{display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;}
+  .bonus-row input[type="checkbox"]{accent-color:var(--gold);width:14px;height:14px;cursor:pointer;}
+  .bonus-row .lb-label{color:var(--gold);}
   .fx-date{font-size:.78rem;color:var(--muted);line-height:1.3;}
   .fx-date b{display:block;color:var(--white);font-size:.86rem;}
   .fx-opp{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -246,7 +253,12 @@
 <header class="top" id="siteHeader">
   <div class="brandrow">
     <div class="brand-left">
-      <svg class="crest" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#142837"/><circle cx="50" cy="50" r="30" fill="none" stroke="#ffb400" stroke-width="8"/><circle cx="50" cy="50" r="10" fill="#ffb400"/></svg>
+      <div class="crest-wrap">
+        <img class="crest" id="urcLogo" alt="United Rugby Championship logo"
+          src="https://commons.wikimedia.org/wiki/Special:FilePath/United_Rugby_Championship_logo.png"
+          onerror="this.replaceWith(document.getElementById('crestFallback'));document.getElementById('crestFallback').style.display='';">
+        <svg id="crestFallback" class="crest" viewBox="0 0 100 100" style="display:none;"><rect width="100" height="100" rx="20" fill="#142837"/><circle cx="50" cy="50" r="30" fill="none" stroke="#ffb400" stroke-width="8"/><circle cx="50" cy="50" r="10" fill="#ffb400"/></svg>
+      </div>
       <div>
         <h1 class="brand">URC <span>DASHBOARD</span></h1>
         <p class="tag">2026/27 Season &middot; all 16 clubs &middot; live table, predictions &amp; playoffs</p>
@@ -313,7 +325,7 @@
     <div class="card champion-banner" id="championBanner" style="display:none;"></div>
 
     <h2 class="section-title">Regular Season <span class="accent">Table</span></h2>
-    <p class="note" style="margin-bottom:14px;">Sorted by log points (win 4, draw 2, loss 0, plus approximate bonus points). Dashed line marks the top-8 playoff cut. Built automatically from every result entered in Fixtures.</p>
+    <p class="note" style="margin-bottom:14px;">Sorted by log points (win 4, draw 2, loss 0, plus bonus points you tick off per team in Fixtures &mdash; try bonus for 4+ tries, losing bonus for a defeat by 7 or fewer). Dashed line marks the top-8 playoff cut. Built automatically from every result entered in Fixtures.</p>
     <div class="table-wrap"><table class="league" id="leagueTable"></table></div>
 
     <h2 class="section-title">Playoff <span class="accent">Bracket</span></h2>
@@ -669,14 +681,14 @@ function currentRatings(){
   return r;
 }
 
-function matchPoints(sf, sa){
-  // sf = this team's score, sa = opponent's score. Bonus points are an
-  // approximation from the scoring margin since try counts aren't tracked.
-  let pts = sf>sa?4:(sf===sa?2:0);
-  let bonus = 0;
-  if(sf>sa && (sf-sa)>=15) bonus=1;
-  if(sf<sa && (sa-sf)<=7) bonus=1;
-  return pts+bonus;
+function bonusPoints(f){
+  // Manual, per-team bonus-point flags (set in the Fixtures tab): hbp/abp are the
+  // attacking (4+ tries) bonus, lb is the losing bonus, credited to whichever side
+  // actually lost. A losing team can pick up both (2 bonus points); a winner only hbp/abp.
+  const homeLost = f.hf<f.af, awayLost = f.af<f.hf;
+  const h = (f.hbp?1:0) + (f.lb && homeLost ? 1:0);
+  const a = (f.abp?1:0) + (f.lb && awayLost ? 1:0);
+  return { h, a };
 }
 
 function winProb(home, away, ratings, cfg){
@@ -698,12 +710,11 @@ function computeTable(){
     const h = rows[f.home], a = rows[f.away];
     if(!h||!a) return;
     h.pld++; a.pld++; h.pf+=f.hf; h.pa+=f.af; a.pf+=f.af; a.pa+=f.hf;
-    if(f.hf>f.af){ h.w++; a.l++; } else if(f.hf<f.af){ a.w++; h.l++; } else { h.d++; a.d++; }
-    h.pts += matchPoints(f.hf,f.af); a.pts += matchPoints(f.af,f.hf);
-    if(f.hf>f.af && (f.hf-f.af)>=15) h.bp++;
-    if(f.af>f.hf && (f.af-f.hf)>=15) a.bp++;
-    if(f.hf<f.af && (f.af-f.hf)<=7) h.bp++;
-    if(f.af<f.hf && (f.hf-f.af)<=7) a.bp++;
+    let hBase, aBase;
+    if(f.hf>f.af){ h.w++; a.l++; hBase=4; aBase=0; } else if(f.hf<f.af){ a.w++; h.l++; hBase=0; aBase=4; } else { h.d++; a.d++; hBase=2; aBase=2; }
+    const bp = bonusPoints(f);
+    h.bp += bp.h; a.bp += bp.a;
+    h.pts += hBase + bp.h; a.pts += aBase + bp.a;
   });
   return Object.values(rows).sort((x,y)=> y.pts-x.pts || (y.pf-y.pa)-(x.pf-x.pa) || y.pf-x.pf || x.name.localeCompare(y.name));
 }
@@ -783,13 +794,14 @@ function computeTeamStats(teamId){
     .concat(state.extras.filter(f=>(f.home===teamId||f.away===teamId) && hasResult(f)))
     .map(f=>{
       const isHome = f.home===teamId;
-      return { date:f.date, opp: isHome?f.away:f.home, venue:isHome?"H":"A", sf:isHome?f.hf:f.af, sa:isHome?f.af:f.hf };
+      const bp = bonusPoints(f);
+      return { date:f.date, opp: isHome?f.away:f.home, venue:isHome?"H":"A", sf:isHome?f.hf:f.af, sa:isHome?f.af:f.hf, bonus: isHome?bp.h:bp.a };
     }).sort((a,b)=>a.date.localeCompare(b.date));
 
-  const s = { played:matches.length, w:0,d:0,l:0,pf:0,pa:0 };
+  const s = { played:matches.length, w:0,d:0,l:0,pf:0,pa:0,bonus:0 };
   let biggestWin=null, biggestLoss=null;
   matches.forEach(m=>{
-    s.pf+=m.sf; s.pa+=m.sa;
+    s.pf+=m.sf; s.pa+=m.sa; s.bonus+=m.bonus;
     const margin = m.sf-m.sa;
     if(m.sf>m.sa){ s.w++; if(!biggestWin||margin>biggestWin.margin) biggestWin={m,margin}; }
     else if(m.sf<m.sa){ s.l++; if(!biggestLoss||-margin>biggestLoss.margin) biggestLoss={m,margin:-margin}; }
@@ -932,6 +944,18 @@ function fixtureRowHtml(f, prob, editable, perspective){
 
   const compTag = f.comp ? '<span class="comp-tag extra">'+f.comp+'</span>' : '<span class="comp-tag">URC</span>';
 
+  let bonusRow = "";
+  if(played && editable){
+    const isDraw = f.hf===f.af;
+    const homeLost = f.hf<f.af;
+    bonusRow = '<div class="bonus-row">'+
+      '<span class="bonus-label">Bonus points:</span>'+
+      '<label><input type="checkbox" data-role="hbp" data-id="'+f.id+'" '+(f.hbp?'checked':'')+'> '+teamName(f.home)+' try bonus</label>'+
+      '<label><input type="checkbox" data-role="abp" data-id="'+f.id+'" '+(f.abp?'checked':'')+'> '+teamName(f.away)+' try bonus</label>'+
+      (!isDraw ? '<label class="lb-label"><input type="checkbox" data-role="lb" data-id="'+f.id+'" '+(f.lb?'checked':'')+'> '+(homeLost?teamName(f.home):teamName(f.away))+' losing bonus</label>' : '')+
+      '</div>';
+  }
+
   return '<div class="'+cls+'">'+
     '<div class="fx-date">'+compTag+'<b>'+fmtDateShort(f.date)+'</b>'+(f.round?('Round '+f.round):'')+'</div>'+
     '<div class="fx-opp"><span class="team-chip">'+teamDotHtml(f.home)+teamName(f.home)+'</span><span style="color:var(--muted-2);">vs</span><span class="team-chip">'+teamDotHtml(f.away)+teamName(f.away)+'</span>'+
@@ -939,6 +963,7 @@ function fixtureRowHtml(f, prob, editable, perspective){
     '</div>'+
     right+
     '<div></div>'+
+    bonusRow+
     '</div>';
 }
 
@@ -1138,7 +1163,8 @@ function renderStats(my){
     {label:"Wins", value:s.w}, {label:"Draws", value:s.d}, {label:"Losses", value:s.l},
     {label:"Win %", value: s.played?Math.round(s.w/s.played*100)+"%":"-"},
     {label:"Points scored", value:s.pf}, {label:"Points conceded", value:s.pa},
-    {label:"Point difference", value:(s.diff>=0?"+":"")+s.diff, cls:s.diff>=0?"pos":"neg"}
+    {label:"Point difference", value:(s.diff>=0?"+":"")+s.diff, cls:s.diff>=0?"pos":"neg"},
+    {label:"Bonus points", value:s.bonus}
   ];
   els.statsKpis.innerHTML = kpis.map(k=>'<div class="card"><h3>'+k.label+'</h3><div class="num '+(k.cls||'')+'">'+k.value+'</div></div>').join("");
 
@@ -1184,6 +1210,9 @@ document.addEventListener("input",(e)=>{
   const t=e.target;
   if(t.matches('input[data-role="hf"]')){ const f=findFixture(t.dataset.id); if(f) f._draftHf=t.value; }
   if(t.matches('input[data-role="af"]')){ const f=findFixture(t.dataset.id); if(f) f._draftAf=t.value; }
+  if(t.matches('input[data-role="hbp"]')){ const f=findFixture(t.dataset.id); if(f){ f.hbp=t.checked; renderAll(); } }
+  if(t.matches('input[data-role="abp"]')){ const f=findFixture(t.dataset.id); if(f){ f.abp=t.checked; renderAll(); } }
+  if(t.matches('input[data-role="lb"]')){ const f=findFixture(t.dataset.id); if(f){ f.lb=t.checked; renderAll(); } }
   if(t.id==="cfgHome"){ state.config.home=+t.value; els.cfgHomeVal.textContent=t.value; renderAll(); }
   if(t.id==="cfgK"){ state.config.k=+t.value; els.cfgKVal.textContent=t.value; renderAll(); }
   if(t.id==="cfgDraw"){ state.config.draw=+t.value; els.cfgDrawVal.textContent=t.value+"%"; renderAll(); }
@@ -1207,6 +1236,13 @@ document.addEventListener("click",(e)=>{
     if(isPlayoff && hf===af){ alert("Playoff matches can't end in a draw — please check the score and enter a winner."); return; }
     f.hf=hf; f.af=af; delete f._draftHf; delete f._draftAf;
     if(isPlayoff) clearDownstreamPlayoffs(id);
+    else if(f.hbp===undefined && f.abp===undefined && f.lb===undefined){
+      // First save: pre-fill a sensible guess (4+ tries / within 7) which you can tick on or off
+      // per team once you know the real bonus points awarded.
+      f.hbp = hf>af && (hf-af)>=15;
+      f.abp = af>hf && (af-hf)>=15;
+      f.lb = hf!==af && Math.abs(hf-af)<=7;
+    }
     renderAll();
   }
   if(t.matches('[data-action="edit"]')){
